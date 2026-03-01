@@ -6,7 +6,7 @@
     <title>Smart AI Bot</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        
         
         body {
             font-family: 'Inter', sans-serif;
@@ -85,6 +85,26 @@
         .hero-cta.secondary {
             background: linear-gradient(135deg, #64c8ff, #00ff99);
             color: #000;
+        }
+
+        /* decorative badges at bottom of hero */
+        .hero-badges {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 30px;
+            z-index: 10;
+        }
+        .badge {
+            font-size: 28px;
+            opacity: 0.7;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        .badge:hover {
+            opacity: 1;
+            transform: scale(1.2);
         }
 
         .hero-change-btn {
@@ -209,6 +229,14 @@
                 <a href="#" class="hero-cta">⚡ JOURNEY FORWARD</a>
                 <a href="#" class="hero-cta secondary">✨ SEEK GUIDANCE</a>
             </div>
+        </div>
+        <!-- decorative badges -->
+        <div class="hero-badges">
+            <span class="badge">🪐</span>
+            <span class="badge">☉</span>
+            <span class="badge">🧷</span>
+            <span class="badge">🌬</span>
+            <span class="badge">🌐</span>
         </div>
     </section>
 
@@ -368,6 +396,15 @@
             const url = `https://source.unsplash.com/1920x1080/?futuristic,ai,robot,cyberpunk,space,technology`;
             // set background-image; request will redirect to a random image
             hero.style.backgroundImage = `url('${url}')`;
+            
+            /* TO USE YOUR OWN IMAGE:
+               Option 1: Download the epic guardian image and save as frontend/guardian.jpg
+               Then uncomment this line:
+               hero.style.backgroundImage = "url('./guardian.jpg')";
+               
+               Option 2: Use a specific image URL:
+               hero.style.backgroundImage = "url('https://example.com/your-image.jpg')";
+            */
         }
 
         // bind change button
