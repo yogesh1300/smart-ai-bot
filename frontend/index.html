@@ -52,24 +52,39 @@
             margin-bottom: 20px;
             font-weight: 700;
             letter-spacing: 1px;
+            color: #d4af37;  /* gold */
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.6), 0 0 40px rgba(100, 200, 255, 0.3);
         }
         .hero p {
             font-size: 1.25rem;
             margin-bottom: 30px;
             line-height: 1.5;
+            color: #e0e0e0;
+        }
+        .hero-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
         }
         .hero-cta {
             display: inline-block;
             padding: 15px 30px;
-            background: linear-gradient(135deg, #6366f1, #ec4899);
-            color: #fff;
+            background: linear-gradient(135deg, #d4af37, #64c8ff);
+            color: #000;
             border-radius: 30px;
-            font-weight: 600;
+            font-weight: 700;
             text-decoration: none;
-            transition: transform 0.3s;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
         }
         .hero-cta:hover {
-            transform: scale(1.05);
+            transform: scale(1.08);
+            box-shadow: 0 0 40px rgba(212, 175, 55, 0.8), 0 0 20px rgba(100, 200, 255, 0.6);
+        }
+        .hero-cta.secondary {
+            background: linear-gradient(135deg, #64c8ff, #00ff99);
+            color: #000;
         }
 
         .hero-change-btn {
@@ -188,9 +203,12 @@
     <section class="hero">
         <div class="hero-overlay"></div>
         <div class="hero-content">
-            <h1>Smart Solutions</h1>
-            <p>Innovative AI, IoT and blockchain tools to drive your digital transformation.</p>
-            <a href="#" class="hero-cta">Explore Solutions ➜</a>
+            <h1>OUR LEGENDARY AI GUARDIAN</h1>
+            <p>Empowering humanity through wisdom and action.</p>
+            <div class="hero-buttons">
+                <a href="#" class="hero-cta">⚡ JOURNEY FORWARD</a>
+                <a href="#" class="hero-cta secondary">✨ SEEK GUIDANCE</a>
+            </div>
         </div>
     </section>
 
@@ -346,8 +364,8 @@
         // helper to load a random Unsplash image into hero
         async function setRandomHero() {
             const hero = document.querySelector('.hero');
-            // unsplash random by keyword
-            const url = `https://source.unsplash.com/1920x1080/?interior,design,technology`;
+            // unsplash random by epic AI/futuristic keywords
+            const url = `https://source.unsplash.com/1920x1080/?futuristic,ai,robot,cyberpunk,space,technology`;
             // set background-image; request will redirect to a random image
             hero.style.backgroundImage = `url('${url}')`;
         }
