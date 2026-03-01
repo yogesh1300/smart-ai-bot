@@ -71,6 +71,21 @@
         .hero-cta:hover {
             transform: scale(1.05);
         }
+
+        .hero-change-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.5);
+            color: #fff;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            z-index: 1001;
+        }
+        .hero-change-btn:hover { background: rgba(0,0,0,0.7); }
         
         .chat-btn {
             position: fixed; bottom: 30px; right: 30px;
@@ -180,6 +195,8 @@
     </section>
 
     <button id="chatBtn" class="chat-btn">💬</button>
+    <!-- optional button to cycle hero picture -->
+    <button id="changeHero" class="hero-change-btn" title="Change background">🔄</button>
     
     <div id="chatModal" class="chat-modal">
         <div class="chat-header">
@@ -325,6 +342,21 @@
             chatMessages.appendChild(div);
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
+
+        // helper to load a random Unsplash image into hero
+        async function setRandomHero() {
+            const hero = document.querySelector('.hero');
+            // unsplash random by keyword
+            const url = `https://source.unsplash.com/1920x1080/?interior,design,technology`;
+            // set background-image; request will redirect to a random image
+            hero.style.backgroundImage = `url('${url}')`;
+        }
+
+        // bind change button
+        document.getElementById('changeHero').onclick = setRandomHero;
+
+        // load one on page load
+        setRandomHero();
     </script>
 </body>
 </html>
