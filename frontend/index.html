@@ -27,7 +27,9 @@
         .hero {
             position: relative;
             height: 80vh;
-            background: url('https://via.placeholder.com/1920x1080/0a0a0b/00ff99?text=Smart+Solutions') center/cover no-repeat;
+            /* fallback gradient data‑URI ensures something shows even offline */
+            background: #0a0a0b url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxOTIwJyBoZWlnaHQ9JzEwODAnPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0nZycgeDE9JzAnIHkxPScwJyB4Mj0nMScgeTI9JzEnPjxzdG9wIG9mZnNldD0nMCcgc3RvcC1jb2xvcj0nIzBhMGEwYicvPjxzdG9wIG9mZnNldD0nMScgc3RvcC1jb2xvcj0nIzAwZmY5OScvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPScxMDAlJyBoZWlnaHQ9JzEwMCUnIGZpbGw9J3VybCgjZyknLz48L3N2Zz4=') center/cover no-repeat;
+            /* edit the URL above to point to a real image in frontend/images or an online URL */
             display: flex;
             align-items: center;
             justify-content: center;
