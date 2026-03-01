@@ -70,6 +70,18 @@
             background: rgba(236,72,153,0.2); border: 1px solid rgba(236,72,153,0.3);
             color: white;
         }
+        .message-bubble a {
+            color: #ffc107;
+            text-decoration: underline;
+        }
+        /* custom scrollbar */
+        .chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(99,102,241,0.4);
+            border-radius: 4px;
+        }
         
         .chat-input-container {
             padding: 24px; background: rgba(30,30,40,0.9); display: flex; gap: 12px;
@@ -98,6 +110,12 @@
         @keyframes typing {
             0%, 60%, 100% { transform: scale(1); opacity: 0.5; }
             30% { transform: scale(1.1); opacity: 1; }
+        }
+
+        /* fade in for messages */
+        .message { opacity: 0; animation: fadeInMsg 0.4s forwards; }
+        @keyframes fadeInMsg {
+            to { opacity: 1; }
         }
     </style>
 </head>
@@ -204,23 +222,23 @@
                 
             } else {
                 // 🔥 AI CHAT (PHASE 4 COMPLETE)
+                const typingNode = showTyping();
                 try {
-                    addMessage('🤖 AI thinking...', 'bot');
                     const res = await fetch('http://127.0.0.1:8000/chat', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({message: msg, session_id: sessionId})
                     });
                     const data = await res.json();
-                    
-                    // Remove "AI thinking..." message
-                    const lastMsg = chatMessages.lastElementChild;
-                    if (lastMsg && lastMsg.querySelector('.message-bubble')?.textContent.includes('AI thinking')) {
-                        lastMsg.remove();
+
+                    // remove typing indicator
+                    if (typingNode && typingNode.parentNode) {
+                        typingNode.remove();
                     }
-                    
+
                     addMessage(data.reply || '🤖 Interesting! Tell me more...', 'bot');
                 } catch (error) {
+                    if (typingNode && typingNode.parentNode) typingNode.remove();
                     addMessage('🤖 AI: Perfectly connected! Type "PHASE 4 DONE"', 'bot');
                 }
             }
@@ -229,6 +247,25 @@
         // EVENT LISTENERS
         sendBtn.onclick = sendMessage;
         messageInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+
+        // typing indicator helper
+        function showTyping() {
+            const div = document.createElement('div');
+            div.className = 'message bot typing';
+            div.innerHTML = `<div class="message-bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span> Thinking...</div>`;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return div;
+        }
+
+        async function sendMessage() {
+            const msg = messageInput.value.trim();
+            if (!msg) return;
+            
+            messageInput.value = '';
+            addMessage(msg, 'user');
+            
+            // ... rest of function stays same
 
         // UI FUNCTIONS
         function addMessage(text, sender) {

@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import requests
 import uuid
 import re
+from bs4 import BeautifulSoup  # for HTML parsing of DuckDuckGo results
 
 app = FastAPI()
 
@@ -30,21 +31,91 @@ class OTPVerify(BaseModel):
 users = {}
 otps = {}
 
+def wiki_search(query: str) -> str | None:
+    """Try Wikipedia search and return a summary of the top hit."""
+    try:
+        # first perform a search to get the title
+        url = "https://en.wikipedia.org/w/api.php"
+        params = {
+            "action": "query",
+            "list": "search",
+            "srsearch": query,
+            "format": "json",
+            "utf8": 1,
+        }
+        r = requests.get(url, params=params, timeout=5)
+        r.raise_for_status()
+        data = r.json()
+        hits = data.get("query", {}).get("search", [])
+        if not hits:
+            return None
+        title = hits[0]["title"]
+
+        # fetch summary of the page
+        r2 = requests.get(
+            f"https://en.wikipedia.org/api/rest_v1/page/summary/{title}",
+            timeout=5,
+        )
+        r2.raise_for_status()
+        summary = r2.json().get("extract")
+        if summary:
+            return f"📚 **Wikipedia – {title}**\n{summary}"
+    except Exception:  # any failure just return None so callers can try other sources
+        pass
+    return None
+
+
+def ddg_html_search(query: str) -> str | None:
+    """Scrape DuckDuckGo's lightweight HTML page and return top 3 result links."""
+    try:
+        url = "https://html.duckduckgo.com/html/"
+        resp = requests.post(url, data={"q": query}, timeout=8)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "html.parser")
+        results = []
+        for a in soup.select("a.result__a"):
+            title = a.get_text(strip=True)
+            href = a.get("href")
+            if title and href:
+                results.append(f"[{title}]({href})")
+            if len(results) >= 3:
+                break
+        if results:
+            return "🔗 " + "\n".join(results)
+    except Exception:
+        pass
+    return None
+
+
 def real_google_search(query):
-    """🔥 LIVE Google search - Perplexity style"""
+    """🔥 attempt a live lookup using free sources with fallbacks"""
+    # 1. DuckDuckGo instant answer (lightweight JSON service)
     try:
         url = f"https://api.duckduckgo.com/?q={query}&format=json&no_html=1&skip_disambig=1"
         response = requests.get(url, timeout=8)
         data = response.json()
-        
+
         if data.get("AbstractText"):
             return f"✅ **{data['Heading']}**: {data['AbstractText']}"
         elif data.get("RelatedTopics"):
-            return f"🌐 **{data['RelatedTopics'][0]['Text'][:300]}...**"
-    except:
+            text = data['RelatedTopics'][0].get('Text', '')
+            if text:
+                return f"🌐 **{text[:500]}...**"
+    except Exception:
         pass
-    return f"🔍 Searched '{query}' - latest web info!"
 
+    # 2. Wikipedia fallback
+    wiki = wiki_search(query)
+    if wiki:
+        return wiki
+
+    # 3. HTML DuckDuckGo scrape
+    ddg_html = ddg_html_search(query)
+    if ddg_html:
+        return ddg_html
+
+    # last resort
+    return f"🔍 Searched '{query}' - here's whatever I could find online."
 def get_smart_ai_response(message):
     msg_lower = message.lower().strip()
     
