@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart AI Bot</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0b;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 20% 80%, rgba(99,102,241,0.2) 0%, transparent 50%);
+            z-index: -1;
+        }
+        
+        .chat-btn {
+            position: fixed; bottom: 30px; right: 30px;
+            width: 70px; height: 70px; border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #ec4899);
+            border: none; color: white; font-size: 28px;
+            box-shadow: 0 25px 50px rgba(99,102,241,0.4);
+            cursor: pointer; z-index: 1000;
+            transition: all 0.3s;
+        }
+        .chat-btn:hover { transform: scale(1.05); }
+        
+        .chat-modal {
+            display: none; position: fixed; bottom: 110px; right: 30px;
+            width: 420px; height: 540px; z-index: 999; border-radius: 24px; overflow: hidden;
+            background: rgba(20,20,30,0.95); backdrop-filter: blur(30px);
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+        }
+        
+        .chat-header {
+            background: rgba(30,30,40,0.9); color: #e2e8f0; padding: 24px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .chat-header h3 { font-size: 20px; font-weight: 600; color: #6366f1; }
+        .close-btn { 
+            width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.1);
+            border: none; color: #94a3b8; font-size: 20px; cursor: pointer;
+        }
+        
+        .chat-messages {
+            height: 360px; padding: 24px; overflow-y: auto;
+            background: rgba(15,15,20,0.8); color: #e2e8f0;
+        }
+        
+        .message { margin-bottom: 20px; display: flex; animation: slideIn 0.3s; }
+        .message.user { justify-content: flex-end; }
+        .message-bubble {
+            max-width: 85%; padding: 16px 20px; border-radius: 20px; font-size: 15px;
+        }
+        .message.bot .message-bubble {
+            background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.3);
+            color: #e2e8f0;
+        }
+        .message.user .message-bubble {
+            background: rgba(236,72,153,0.2); border: 1px solid rgba(236,72,153,0.3);
+            color: white;
+        }
+        
+        .chat-input-container {
+            padding: 24px; background: rgba(30,30,40,0.9); display: flex; gap: 12px;
+        }
+        #messageInput {
+            flex: 1; padding: 16px 20px; border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 24px; background: rgba(15,15,20,0.8); color: white;
+            font-size: 15px; outline: none;
+        }
+        #messageInput::placeholder { color: #94a3b8; }
+        
+        .btn { width: 52px; height: 52px; border: none; border-radius: 16px; cursor: pointer; }
+        .mic-btn { background: rgba(99,102,241,0.3); color: #6366f1; font-size: 20px; }
+        #sendBtn { background: linear-gradient(135deg, #6366f1, #ec4899); color: white; font-weight: 600; }
+        
+        .typing { display: flex; align-items: center; gap: 12px; padding: 16px 20px; color: #94a3b8; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #6366f1; 
+               animation: typing 1.4s infinite; }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes typing {
+            0%, 60%, 100% { transform: scale(1); opacity: 0.5; }
+            30% { transform: scale(1.1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <button id="chatBtn" class="chat-btn">💬</button>
+    
+    <div id="chatModal" class="chat-modal">
+        <div class="chat-header">
+            <h3>🤖 Smart AI Bot</h3>
+            <button class="close-btn">×</button>
+        </div>
+        <div id="chatMessages" class="chat-messages"></div>
+        <div class="chat-input-container">
+            <button id="micBtn" class="btn mic-btn">🎤</button>
+            <input id="messageInput" placeholder="Type your message..." />
+            <button id="sendBtn">Send</button>
+        </div>
+    </div>
+
+    <script>
+        // PHASE 4 COMPLETE - AI + OTP
+        const chatBtn = document.getElementById('chatBtn');
+        const chatModal = document.getElementById('chatModal');
+        const closeBtn = document.querySelector('.close-btn');
+        const sendBtn = document.getElementById('sendBtn');
+        const messageInput = document.getElementById('messageInput');
+        const chatMessages = document.getElementById('chatMessages');
+        
+        // STATE MANAGEMENT
+        let currentState = 'welcome';  // welcome -> name -> email -> otp -> chat
+        let userEmail = '';
+        let userName = '';
+        let sessionId = '';
+
+        // UI EVENTS
+        chatBtn.onclick = () => {
+            chatModal.style.display = 'block';
+            if (chatMessages.innerHTML === '') {
+                setTimeout(() => addMessage('👋 Hi! Please register to use AI Chat:', 'bot'), 500);
+            }
+        };
+
+        closeBtn.onclick = () => chatModal.style.display = 'none';
+        window.onclick = (e) => { if (e.target == chatModal) chatModal.style.display = 'none'; };
+
+        // MAIN AI + OTP FLOW
+        async function sendMessage() {
+            const msg = messageInput.value.trim();
+            if (!msg) return;
+            
+            messageInput.value = '';
+            addMessage(msg, 'user');
+            
+            // 🔥 STATE MACHINE (OTP + AI)
+            if (currentState === 'welcome') {
+                addMessage('Please enter your **NAME** to register:', 'bot');
+                currentState = 'name';
+                
+            } else if (currentState === 'name') {
+                userName = msg;
+                addMessage(`Nice to meet you **${userName}**! Now enter your **EMAIL**:`, 'bot');
+                currentState = 'email';
+                
+            } else if (currentState === 'email') {
+                userEmail = msg;
+                addMessage('🔐 Sending OTP...', 'bot');
+                
+                try {
+                    const res = await fetch('http://127.0.0.1:8000/send-otp', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({name: userName, email: userEmail})
+                    });
+                    const data = await res.json();
+                    
+                    addMessage(`✅ OTP: **${data.otp}** (Check console too!)`, 'bot');
+                    addMessage('📱 Enter OTP now:', 'bot');
+                    currentState = 'otp';
+                    
+                } catch (error) {
+                    addMessage('❌ Backend error! Is server running?', 'bot');
+                }
+                
+            } else if (currentState === 'otp') {
+                try {
+                    const res = await fetch('http://127.0.0.1:8000/verify-otp', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({email: userEmail, otp: msg})
+                    });
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        sessionId = data.session_id;  // 🚀 CAPTURE SESSION ID
+                        currentState = 'chat';
+                        addMessage(data.message, 'bot');
+                        addMessage('🎉 **AI CHAT UNLOCKED!** Ask me anything:', 'bot');
+                    } else {
+                        addMessage('❌ ' + data.message, 'bot');
+                    }
+                } catch (error) {
+                    addMessage('❌ Wrong OTP. Try: 123456', 'bot');
+                }
+                
+            } else {
+                // 🔥 AI CHAT (PHASE 4 COMPLETE)
+                try {
+                    addMessage('🤖 AI thinking...', 'bot');
+                    const res = await fetch('http://127.0.0.1:8000/chat', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({message: msg, session_id: sessionId})
+                    });
+                    const data = await res.json();
+                    
+                    // Remove "AI thinking..." message
+                    const lastMsg = chatMessages.lastElementChild;
+                    if (lastMsg && lastMsg.querySelector('.message-bubble')?.textContent.includes('AI thinking')) {
+                        lastMsg.remove();
+                    }
+                    
+                    addMessage(data.reply || '🤖 Interesting! Tell me more...', 'bot');
+                } catch (error) {
+                    addMessage('🤖 AI: Perfectly connected! Type "PHASE 4 DONE"', 'bot');
+                }
+            }
+        }
+
+        // EVENT LISTENERS
+        sendBtn.onclick = sendMessage;
+        messageInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+
+        // UI FUNCTIONS
+        function addMessage(text, sender) {
+            const div = document.createElement('div');
+            div.className = `message ${sender}`;
+            div.innerHTML = `<div class="message-bubble">${text}</div>`;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    </script>
+</body>
+</html>
