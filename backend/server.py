@@ -66,22 +66,32 @@ def wiki_search(query: str) -> str | None:
 
 
 def ddg_html_search(query: str) -> str | None:
-    """Scrape DuckDuckGo's lightweight HTML page and return top 3 result links."""
+    """Scrape DuckDuckGo's lightweight HTML page and return top few results with title/snippet."""
     try:
         url = "https://html.duckduckgo.com/html/"
         resp = requests.post(url, data={"q": query}, timeout=8)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
-        results = []
-        for a in soup.select("a.result__a"):
+        # collect up to 3 results
+        entries = []
+        for result in soup.select("div.result"):
+            a = result.select_one("a.result__a")
+            snippet_el = result.select_one("a.result__snippet, div.result__snippet")
+            if not a:
+                continue
             title = a.get_text(strip=True)
             href = a.get("href")
+            snippet = snippet_el.get_text(strip=True) if snippet_el else ""
             if title and href:
-                results.append(f"[{title}]({href})")
-            if len(results) >= 3:
+                # build html link with optional snippet
+                if snippet:
+                    entries.append(f"<a href='{href}' target='_blank'>{title}</a><br><small>{snippet}</small>")
+                else:
+                    entries.append(f"<a href='{href}' target='_blank'>{title}</a>")
+            if len(entries) >= 3:
                 break
-        if results:
-            return "🔗 " + "\n".join(results)
+        if entries:
+            return "<div>" + "<br><br>".join(entries) + "</div>"
     except Exception:
         pass
     return None
@@ -95,21 +105,29 @@ def real_google_search(query):
         response = requests.get(url, timeout=8)
         data = response.json()
 
-        if data.get("AbstractText"):
-            return f"✅ **{data['Heading']}**: {data['AbstractText']}"
-        elif data.get("RelatedTopics"):
+        abstract = data.get("AbstractText", "").strip()
+        if abstract and abstract.lower() != query.lower():
+            heading = data.get('Heading', query)
+            return f"✅ <strong>{heading}</strong>: {abstract}"
+
+        # sometimes instant answer returns just the query; ignore that
+        if data.get("RelatedTopics"):
             text = data['RelatedTopics'][0].get('Text', '')
             if text:
-                return f"🌐 **{text[:500]}...**"
+                return f"🌐 {text}"
     except Exception:
         pass
 
     # 2. Wikipedia fallback
     wiki = wiki_search(query)
     if wiki:
+        # also include some DDG links beneath wiki result for context
+        ddg_html = ddg_html_search(query)
+        if ddg_html:
+            return wiki + "<br><br>" + ddg_html
         return wiki
 
-    # 3. HTML DuckDuckGo scrape
+    # 3. HTML DuckDuckGo scrape (always try at least links)
     ddg_html = ddg_html_search(query)
     if ddg_html:
         return ddg_html
