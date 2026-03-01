@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import os
 import requests
 import uuid
 import re
@@ -97,8 +98,49 @@ def ddg_html_search(query: str) -> str | None:
     return None
 
 
+def bing_search(query: str) -> str | None:
+    """Use the Bing Web Search API if a key is provided via BING_KEY env var."""
+    key = os.getenv("BING_KEY")
+    if not key:
+        return None
+    try:
+        url = "https://api.bing.microsoft.com/v7.0/search"
+        headers = {"Ocp-Apim-Subscription-Key": key}
+        params = {"q": query, "count": 3, "textDecorations": True, "textFormat": "HTML"}
+        r = requests.get(url, headers=headers, params=params, timeout=8)
+        r.raise_for_status()
+        data = r.json()
+        results = []
+        for item in data.get("webPages", {}).get("value", []):
+            title = item.get("name")
+            link = item.get("url")
+            snippet = item.get("snippet")
+            if title and link:
+                entry = f"<a href='{link}' target='_blank'>{title}</a>"
+                if snippet:
+                    entry += f"<br><small>{snippet}</small>"
+                results.append(entry)
+            if len(results) >= 3:
+                break
+        if results:
+            return "<div>" + "<br><br>".join(results) + "</div>"
+    except Exception:
+        pass
+    return None
+
+
 def real_google_search(query):
-    """🔥 attempt a live lookup using free sources with fallbacks"""
+    """🔎 perform a comprehensive search using multiple providers
+
+    - Always gather DuckDuckGo HTML links (best effort)
+    - Try instant answer first
+    - Optionally consult Bing if key available
+    - Fall back to Wikipedia summary
+    - If nothing else, return the HTML links or a generic message
+    """
+    # always gather ddg html results in case we need them
+    ddg_html = ddg_html_search(query)
+
     # 1. DuckDuckGo instant answer (lightweight JSON service)
     try:
         url = f"https://api.duckduckgo.com/?q={query}&format=json&no_html=1&skip_disambig=1"
@@ -108,27 +150,39 @@ def real_google_search(query):
         abstract = data.get("AbstractText", "").strip()
         if abstract and abstract.lower() != query.lower():
             heading = data.get('Heading', query)
-            return f"✅ <strong>{heading}</strong>: {abstract}"
+            result = f"✅ <strong>{heading}</strong>: {abstract}"
+            if ddg_html:
+                result += "<br><br>" + ddg_html
+            return result
 
-        # sometimes instant answer returns just the query; ignore that
         if data.get("RelatedTopics"):
             text = data['RelatedTopics'][0].get('Text', '')
             if text:
-                return f"🌐 {text}"
+                result = f"🌐 {text}"
+                if ddg_html:
+                    result += "<br><br>" + ddg_html
+                return result
     except Exception:
         pass
 
-    # 2. Wikipedia fallback
+    # 2. Bing (if key exists)
+    bing = bing_search(query)
+    if bing:
+        # if we got bing results, show them along with ddg links
+        result = bing
+        if ddg_html and ddg_html not in bing:
+            result += "<br><br>" + ddg_html
+        return result
+
+    # 3. Wikipedia fallback
     wiki = wiki_search(query)
     if wiki:
-        # also include some DDG links beneath wiki result for context
-        ddg_html = ddg_html_search(query)
+        result = wiki
         if ddg_html:
-            return wiki + "<br><br>" + ddg_html
-        return wiki
+            result += "<br><br>" + ddg_html
+        return result
 
-    # 3. HTML DuckDuckGo scrape (always try at least links)
-    ddg_html = ddg_html_search(query)
+    # 4. if we have DDG links, return them
     if ddg_html:
         return ddg_html
 

@@ -32,6 +32,10 @@ This repository contains a simple chat-bot web application (`Perplexity`-style) 
 3. **Open the frontend**
    Simply open `frontend/index.html` in your browser, or serve it from a simple static server.
 
+   _The chat UI will accept full sentences; the backend treats whatever you type as a
+   search query and tries to fetch results accordingly. The more descriptive your
+   question, the better the output._
+
 4. **Use the bot**
    - Click the chat button, register with a name/email pair
    - Use OTP `123456` (printed in server console)
@@ -41,12 +45,32 @@ This repository contains a simple chat-bot web application (`Perplexity`-style) 
 
 The backend `server.py` contains several helper functions:
 
-- `real_google_search`: main entry point that tries:
-  1. DuckDuckGo instant answer
-  2. Wikipedia search/summary
-  3. DuckDuckGo HTML results scraping
-  
-You can add more providers or tweak the formatting there.
+- `real_google_search`: main entry point that tries, in order:
+  1. DuckDuckGo instant answer (quick facts)
+  2. Bing Web Search API (if you supply a `BING_KEY` environment variable)
+  3. Wikipedia search/summary
+  4. DuckDuckGo HTML scraping (always produces a list of links/snippets)
+
+  The function always returns some HTML‑formatted text so the frontend can render
+  clickable links and snippets.  It also appends DDG links under whatever content
+  it fetches, giving the user multiple choices.
+
+- `wiki_search`, `ddg_html_search`, `bing_search` are the individual helpers.
+
+You can extend or replace any of these providers.  For example, add a call to
+another free API, or perform your own crawling.  The search logic is deliberately
+permissive so that even vague or one‑word queries will return at least a list of
+possible links the user can follow.
+
+To enable Bing, set the environment variable before starting the server:
+
+```powershell
+# Windows PowerShell
+$env:BING_KEY = "your_key_here"
+uvicorn server:app --reload
+```
+
+Bing offers a small free tier and will enrich the answers when available.
 
 ## License
 
