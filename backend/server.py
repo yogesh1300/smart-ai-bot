@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import os
 import requests
@@ -8,6 +10,14 @@ import re
 from bs4 import BeautifulSoup  # for HTML parsing of DuckDuckGo results
 
 app = FastAPI()
+
+frontend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../frontend"))
+
+app.mount("/static", StaticFiles(directory=frontend_path), name="static")
+
+@app.get("/")
+async def serve_frontend():
+    return FileResponse(os.path.join(frontend_path, "index.html"))
 
 app.add_middleware(
     CORSMiddleware,
